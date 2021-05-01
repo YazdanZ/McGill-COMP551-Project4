@@ -137,7 +137,7 @@ def plot_confusion_matrix(phase, path, class_names):
     actual = labels[:, 25:]
 
     # create a TensorFlow session
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
 
         # decode the one-hot encoded labels to single integer
         predictions = sess.run(tf.argmax(predictions, 1))

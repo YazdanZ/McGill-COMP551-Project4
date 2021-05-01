@@ -95,7 +95,7 @@ def main(arguments):
         model_choice == 1 or model_choice == 2 or model_choice == 3
     ), "Invalid choice: Choose among 1, 2, and 3 only."
 
-    dataset = np.load(arguments.dataset)
+    dataset = np.load(arguments.dataset, allow_pickle=True)
 
     features, labels = load_data(dataset=dataset)
 

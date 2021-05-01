@@ -40,9 +40,10 @@ def predict(dataset, model, model_path, **kwargs):
     :param model_path: The path where the trained model is saved.
     :return:
     """
+    tf.compat.v1.disable_eager_execution()
 
     init_op = tf.group(
-        tf.local_variables_initializer(), tf.global_variables_initializer()
+            tf.compat.v1.local_variables_initializer(), tf.compat.v1.global_variables_initializer()
     )
 
     accuracy_tensor_name = "accuracy/accuracy/Mean:0"
@@ -50,7 +51,7 @@ def predict(dataset, model, model_path, **kwargs):
 
     assert BATCH_SIZE in kwargs, "KeyNotFound : {}".format(BATCH_SIZE)
     assert (
-        type(kwargs[BATCH_SIZE]) is int
+            type(kwargs[BATCH_SIZE]) is int
     ), "Expected data type : int, but {} is {}".format(
         kwargs[BATCH_SIZE], type(kwargs[BATCH_SIZE])
     )
@@ -66,7 +67,7 @@ def predict(dataset, model, model_path, **kwargs):
         # GRU-SVM
         assert CELL_SIZE in kwargs, "KeyNotFound : {}".format(CELL_SIZE)
         assert (
-            type(kwargs[CELL_SIZE]) is int
+                type(kwargs[CELL_SIZE]) is int
         ), "Expected data type : int, but {} is {}".format(
             kwargs[CELL_SIZE], type(kwargs[CELL_SIZE])
         )
@@ -88,14 +89,14 @@ def predict(dataset, model, model_path, **kwargs):
     predictions_array = np.array([])
     accuracy_array = np.array([])
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         sess.run(init_op)
 
         checkpoint = tf.train.get_checkpoint_state(model_path)
 
         if checkpoint and checkpoint.model_checkpoint_path:
             # get the meta graph from trained model
-            saver = tf.train.import_meta_graph(
+            saver = tf.compat.v1.train.import_meta_graph(
                 checkpoint.model_checkpoint_path + ".meta"
             )
             # restore previously-saved variables from the meta graph
@@ -111,8 +112,8 @@ def predict(dataset, model, model_path, **kwargs):
         try:
             for step in range(kwargs["size"] // kwargs["batch_size"]):
                 offset = (step * kwargs["batch_size"]) % kwargs["size"]
-                features = dataset[0][offset : (offset + kwargs["batch_size"])]
-                labels = dataset[1][offset : (offset + kwargs["batch_size"])]
+                features = dataset[0][offset: (offset + kwargs["batch_size"])]
+                labels = dataset[1][offset: (offset + kwargs["batch_size"])]
 
                 feed_dict["x_input:0" if model == 1 else "input/x_input:0"] = features
                 feed_dict["y_input:0" if model == 1 else "input/y_input:0"] = labels
@@ -161,18 +162,17 @@ def parse_args():
 
 
 def main(arguments):
-
     model_choice = arguments.model
     model_path = arguments.model_path
     dataset_path = arguments.dataset
 
     assert (
-        model_choice == 1 or model_choice == 2 or model_choice == 3
+            model_choice == 1 or model_choice == 2 or model_choice == 3
     ), "Invalid choice: Choose among 1, 2, and 3 only."
     assert os.path.exists(path=model_path), "{} does not exist!".format(model_path)
     assert os.path.exists(path=dataset_path), "{} does not exist!".format(dataset_path)
 
-    dataset = np.load(dataset_path)
+    dataset = np.load(dataset_path, allow_pickle=True)
 
     features, labels = load_data(dataset=dataset)
 

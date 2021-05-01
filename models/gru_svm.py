@@ -75,24 +75,24 @@ class GruSvm:
             """Build the inference graph"""
             with tf.name_scope("input"):
                 # [BATCH_SIZE, SEQUENCE_WIDTH, SEQUENCE_HEIGHT]
-                x_input = tf.placeholder(
+                x_input = tf.compat.v1.placeholder(
                     dtype=tf.float32,
                     shape=[None, self.sequence_width, sequence_height],
                     name="x_input",
                 )
 
                 # [BATCH_SIZE, NUM_CLASSES]
-                y_input = tf.placeholder(
+                y_input = tf.compat.v1.placeholder(
                     dtype=tf.float32, shape=[None, self.num_classes], name="y_input"
                 )
 
-            state = tf.placeholder(
+            state = tf.compat.v1.placeholder(
                 dtype=tf.float32,
                 shape=[None, self.cell_size * self.num_layers],
                 name="initial_state",
             )
 
-            p_keep = tf.placeholder(dtype=tf.float32, name="p_keep")
+            p_keep = tf.compat.v1.placeholder(dtype=tf.float32, name="p_keep")
             learning_rate = tf.placeholder(dtype=tf.float32, name="learning_rate")
 
             cells = [

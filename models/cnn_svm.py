@@ -30,7 +30,7 @@ from utils.svm import svm_loss
 
 class CNN:
     def __init__(
-        self, alpha, batch_size, num_classes, penalty_parameter, sequence_length
+            self, alpha, batch_size, num_classes, penalty_parameter, sequence_length
     ):
         """Initializes the CNN-SVM model
 
@@ -47,14 +47,16 @@ class CNN:
         self.penalty_parameter = penalty_parameter
         self.sequence_length = sequence_length
 
+        tf.compat.v1.disable_eager_execution()
+
         def __graph__():
             # [BATCH_SIZE, SEQUENCE_LENGTH]
-            x_input = tf.placeholder(
+            x_input = tf.compat.v1.placeholder(
                 dtype=tf.float32, shape=[None, sequence_length], name="x_input"
             )
 
             # [BATCH_SIZE, NUM_CLASSES]
-            y_input = tf.placeholder(
+            y_input = tf.compat.v1.placeholder(
                 dtype=tf.float32, shape=[None, num_classes], name="y_input"
             )
 
@@ -89,7 +91,7 @@ class CNN:
             )
 
             # Dropout, to avoid overfitting
-            keep_prob = tf.placeholder(tf.float32, name="p_keep")
+            keep_prob = tf.compat.v1.placeholder(tf.float32, name="p_keep")
             h_fc1_drop = tf.nn.dropout(dense_layer_activation, keep_prob)
 
             # Readout layer
@@ -106,9 +108,9 @@ class CNN:
                     penalty_parameter=penalty_parameter,
                     weight=readout_weight,
                 )
-            tf.summary.scalar("loss", loss)
+            tf.compat.v1.summary.scalar("loss", loss)
 
-            train_op = tf.train.AdamOptimizer(learning_rate=alpha).minimize(loss)
+            train_op = tf.compat.v1.train.AdamOptimizer(learning_rate=alpha).minimize(loss)
 
             with tf.name_scope("metrics"):
                 predicted_class = tf.sign(logits)
@@ -119,9 +121,9 @@ class CNN:
                     )
                 with tf.name_scope("accuracy"):
                     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-            tf.summary.scalar("accuracy", accuracy)
+            tf.compat.v1.summary.scalar("accuracy", accuracy)
 
-            merged = tf.summary.merge_all()
+            merged = tf.compat.v1.summary.merge_all()
 
             self.x_input = x_input
             self.y_input = y_input
@@ -138,15 +140,15 @@ class CNN:
         sys.stdout.write("</log>\n")
 
     def train(
-        self,
-        checkpoint_path,
-        epochs,
-        log_path,
-        result_path,
-        train_data,
-        train_size,
-        test_data,
-        test_size,
+            self,
+            checkpoint_path,
+            epochs,
+            log_path,
+            result_path,
+            train_data,
+            train_size,
+            test_data,
+            test_size,
     ):
         """Trains the initialized CNN-SVM model
 
@@ -169,29 +171,29 @@ class CNN:
 
         timestamp = str(time.asctime())
 
-        saver = tf.train.Saver(max_to_keep=2)
+        saver = tf.compat.v1.train.Saver(max_to_keep=2)
 
         init = tf.group(
-            tf.global_variables_initializer(), tf.local_variables_initializer()
+            tf.compat.v1.global_variables_initializer(), tf.compat.v1.local_variables_initializer()
         )
 
-        train_writer = tf.summary.FileWriter(
-            logdir=os.path.join(log_path, timestamp + "-training"),
-            graph=tf.get_default_graph(),
+        train_writer = tf.compat.v1.summary.FileWriter(
+            logdir=os.path.join(log_path, "-training"),
+            graph=tf.compat.v1.get_default_graph(),
         )
-        test_writer = tf.summary.FileWriter(
-            logdir=os.path.join(log_path, timestamp + "-testing"),
-            graph=tf.get_default_graph(),
+        test_writer = tf.compat.v1.summary.FileWriter(
+            logdir=os.path.join(log_path, "-testing"),
+            graph=tf.compat.v1.get_default_graph(),
         )
 
-        with tf.Session() as sess:
+        with tf.compat.v1.Session() as sess:
 
             sess.run(init)
 
-            checkpoint = tf.train.get_checkpoint_state(checkpoint_path)
+            checkpoint = tf.compat.v1.train.get_checkpoint_state(checkpoint_path)
 
             if checkpoint and checkpoint.model_checkpoint_path:
-                saver = tf.train.import_meta_graph(
+                saver = tf.compat.v1.train.import_meta_graph(
                     checkpoint.model_checkpoint_path + ".meta"
                 )
                 saver.restore(sess, tf.train.latest_checkpoint(checkpoint_path))
@@ -199,12 +201,11 @@ class CNN:
 
             try:
                 for step in range(epochs * train_size // self.batch_size):
-
                     offset = (step * self.batch_size) % train_size
 
                     # train by batch
-                    train_features = train_data[0][offset : (offset + self.batch_size)]
-                    train_labels = train_data[1][offset : (offset + self.batch_size)]
+                    train_features = train_data[0][offset: (offset + self.batch_size)]
+                    train_labels = train_data[1][offset: (offset + self.batch_size)]
 
                     # input dictionary with dropout of 50%
                     feed_dict = {
@@ -228,6 +229,7 @@ class CNN:
                         }
 
                         # get the accuracy of training
+                        tempo1 = self.accuracy
                         train_accuracy = sess.run(self.accuracy, feed_dict=feed_dict)
 
                         # display the training accuracy
@@ -257,8 +259,8 @@ class CNN:
                     offset = (step * self.batch_size) % test_size
 
                     # train by batch
-                    test_features = test_data[0][offset : (offset + self.batch_size)]
-                    test_labels = test_data[1][offset : (offset + self.batch_size)]
+                    test_features = test_data[0][offset: (offset + self.batch_size)]
+                    test_labels = test_data[1][offset: (offset + self.batch_size)]
 
                     # input dictionary
                     feed_dict = {
@@ -268,6 +270,7 @@ class CNN:
                     }
 
                     # run the train op
+                    classs = self.predicted_class
                     test_summary, accuracy, loss, prediction, actual = sess.run(
                         [
                             self.merged,
@@ -278,10 +281,7 @@ class CNN:
                         ],
                         feed_dict=feed_dict,
                     )
-
-                    # every 100th step and at 0,
                     if step % 100 == 0:
-
                         # display the testing accuracy and loss
                         print(
                             "step: {}, testing accuracy : {}, testing loss : {}".format(
@@ -292,7 +292,7 @@ class CNN:
                         test_writer.add_summary(summary=test_summary, global_step=step)
 
                     save_labels(
-                        predictions=prediction,
+                        predictions=actual,
                         actual=actual,
                         result_path=result_path,
                         phase="testing",
@@ -300,7 +300,10 @@ class CNN:
                         step=step,
                     )
 
-                print("EOF -- Testing done at step {}".format(step))
+                    print("EOF -- Testing done at step {}".format(step))
+
+
+            # every 100th step and at 0,
 
     @staticmethod
     def weight_variable(shape):
@@ -309,7 +312,7 @@ class CNN:
         :param shape: The shape of the weight matrix to create.
         :return: The weight matrix consisting of arbitrary values.
         """
-        initial = tf.truncated_normal(shape, stddev=0.1)
+        initial = tf.compat.v1.truncated_normal(shape, stddev=0.1)
         return tf.Variable(initial)
 
     @staticmethod
